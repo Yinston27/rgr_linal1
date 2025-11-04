@@ -18,7 +18,6 @@ def printer(matrgaus, por=None, f=None):
             print()
         print()
 
-
 def subtraction_all(matrix, LINE, POR):
     list_k = [matrix[j][LINE] for j in range(POR)]
     for strok in [h for h in range(POR) if h != LINE]:
@@ -32,138 +31,93 @@ def revert_col(matrics, one_col, two_col):
         matrics[i][two_col] = col_one[i]
     return matrics
 
-# -----
-def matrix_value(matrix, unknows_list, rang_matrix, mode='slau'):
-    line_list = [0 for i in range(len(unknows_list))]
-    # печать значений
-    if mode == 'fund':
-        for i in range(rang_matrix):
-            line = 0
-            for j in range(len(unknows_list)):
-                if i == j:
-                    key = i
-                    if i == rang_matrix - 1 and matrix[i][-1] != 0 and rang_matrix == len(matrix):
-                        line += Fraction(matrix[i][-1])
-                elif j == i + 1 and matrix[i][-1] != 0:
-                    line += Fraction(matrix[i][-1])
-                else:
-                    if matrix[i][j] == 0:
-                        continue
-                    else:
-                        if matrix[i][j] == 1:
-                            line += Fraction(-1*unknows_list[j])
-                        else:
-                            line += Fraction(-1*matrix[i][j])*Fraction(unknows_list[j])
-            line_list[key] = line   
-
-        if rang_matrix < len(unknows_list):
-            for j in range(rang_matrix, len(unknows_list)):
-                line_list[j] = Fraction(unknows_list[j])
-    print(line_list)
-        
-        # 
-
-# ----
-
-def simplified_matrix(matrix, mode = None):
+def simplified_matrix(matrix, mode=None):
     POR = len(matrix)
     if type(mode) == list:
         unknows_list = mode[:]
+    
     for LINE in range(POR):
-        if matrix[LINE][LINE] != 0:
-            matrix[LINE] = [matrix[LINE][l] / matrix[LINE][LINE] for l in range(len(matrix[LINE]))]
-            matrix = subtraction_all(matrix, LINE, POR)
-        else:
-            if len(set(matrix[LINE][:POR])) == 1 and 0 in matrix[LINE][:POR]:
-                if mode == -1:
-                    return LINE
-                elif (LINE == POR - 1) and (type(mode) == list):
-                    return [matrix, unknows_list, LINE]
-                else:
-                    if mode == 1 and LINE == POR - 1:
-                        return POR - 1
-                    else:
-                        for i in range(POR-LINE-1):
-                            matrix.append(matrix.pop(LINE))
-                            if not(len(set(matrix[LINE][:POR])) == 1 and 0 in matrix[LINE][:POR]):
-                                break
-                            if i == LINE-1:
-                                if type(mode) != list:
-                                    return LINE
-                                else:
-                                    return [matrix, unknows_list, LINE]
-            col_index = [i for i in range(LINE, POR) if matrix[LINE][i] != 0]
-            one_col = min(col_index)
-            if one_col == LINE:
-                continue
-            else:
-                matrix = revert_col(matrix, one_col, LINE)
-                if mode == 1:
+        # Если диагональный элемент нулевой, ищем ненулевой элемент в столбце
+        if matrix[LINE][LINE] == 0:
+            found = False
+            for row in range(LINE + 1, POR):
+                if matrix[row][LINE] != 0:
+                    # Меняем строки местами
+                    matrix[LINE], matrix[row] = matrix[row], matrix[LINE]
+                    found = True
+                    break
+            
+            if not found:
+                # Ищем ненулевой элемент в этой строке справа
+                for col in range(LINE + 1, len(matrix[LINE]) - 1):
+                    if matrix[LINE][col] != 0:
+                        # Меняем столбцы местами
+                        if type(mode) == list:
+                            unknows_list[LINE], unknows_list[col] = unknows_list[col], unknows_list[LINE]
+                        for i in range(POR):
+                            matrix[i][LINE], matrix[i][col] = matrix[i][col], matrix[i][LINE]
+                        found = True
+                        break
+                
+                if not found:
+                    # Вся строка нулевая - пропускаем
                     continue
-                elif type(mode) == list:
-                    unknows_list[one_col], unknows_list[LINE] = unknows_list[LINE], unknows_list[one_col]
-            matrix[LINE] = [matrix[LINE][l] / matrix[LINE][LINE] for l in range(len(matrix[LINE]))]
+        
+        # Нормализуем строку
+        if matrix[LINE][LINE] != 0:
+            divisor = matrix[LINE][LINE]
+            matrix[LINE] = [elem / divisor for elem in matrix[LINE]]
             matrix = subtraction_all(matrix, LINE, POR)
-    if mode == -1:
-        return matrix
-    elif mode == 1:
-        return len(matrix)
-    else:
-        # Список - матрица и порядок неизвестных
-        return [matrix, unknows_list, POR]
-
-
-def revert_matr(POR=2):
-    matr = [list(map(Fraction, input(f"Коэффиценты {i+1} строки через пробел: ").split(' '))) for i in range(POR)]
-    matrgaus = [[] for i in range(POR)]
-    # Составление расширенной матрицы
+    
+    # Удаляем нулевые строки
+    non_zero_rows = []
     for i in range(POR):
-        line_E = list(map(int, ('0 '*POR).split(' ')[:-1]))
-        line_E[i] = 1
-        matrgaus[i] = matr[i] + line_E
-    # Проход по строкам расш матр
-    matrgaus = simplified_matrix(matrgaus, mode = -1)
-    # если матрица вырождена
-    if type(matrgaus) == int:
-        return matrgaus
-    matrics = [[] for i in range(POR)]
-    for line in range(POR):
-        matrics[line] = [i for i in matrgaus[line][POR:]]
-    return matrics
-
-
-def rang(por=2):
-    matrix = [list(map(Fraction, input(f"Коэффиценты {i+1} строки через пробел: ").split(' '))) for i in range(por)]
-    rang_m = simplified_matrix(matrix, mode=1)
-    if type(rang_m) == list:
-        print(f'Ранг - {len(rang_m)}')
+        if any(matrix[i][j] != 0 for j in range(len(matrix[i]) - 1)):
+            non_zero_rows.append(matrix[i])
+        elif matrix[i][-1] != 0:  # Случай 0 = b, где b != 0 - нет решений
+            if type(mode) == list:
+                return [matrix, unknows_list, i, True]  # Флаг отсутствия решений
+    
+    if mode == -1:
+        return non_zero_rows
+    elif mode == 1:
+        return len(non_zero_rows)
+    elif type(mode) == list:
+        return [non_zero_rows, unknows_list, len(non_zero_rows), False]  # Решения есть
     else:
-        print(f'Ранг - {rang_m}')
-
-
+        return non_zero_rows
 
 def slau(unknows, lines):
-    matric = [list(map(Fraction, input(f"Коэффиценты {i+1} уравнения через пробел: ").split(' '))) for i in range(lines)]
-    list_b = list(map(Fraction, input(f"Коэффиценты столбца B через пробел: ").split(' ')))
-    matrix_b = [matric[i]+[list_b[i]] for i in range(lines)]
-    unknows_list = []
-    for i in range(unknows):
-        unknows_list.append(f'{i+1}')
-        
-    matrix_b, unknows_list, rang_matrix_b = simplified_matrix(matrix_b, mode = unknows_list)
-    if [matrix_b[i][-1] for i in range(rang_matrix_b, lines) if matrix_b[i][-1] != 0]:
+    matric = [list(map(Fraction, input(f"Коэффициенты {i+1} уравнения через пробел: ").split(' '))) for i in range(lines)]
+    list_b = list(map(Fraction, input(f"Коэффициенты столбца B через пробел: ").split(' ')))
+    matrix_b = [matric[i] + [list_b[i]] for i in range(lines)]
+    unknows_list = [f'{i+1}' for i in range(unknows)]
+    
+    result = simplified_matrix(matrix_b, mode=unknows_list)
+    
+    # Проверяем наличие решений
+    if result[3]:  # Если установлен флаг отсутствия решений
         print('Решений нет')
         return None
-     
+    
+    matrix_b, unknows_list, rang_matrix_b = result[:3]
+    
+    # Дополнительная проверка: если есть строка 0 0 ... 0 | b, где b ≠ 0
+    for i in range(len(matrix_b)):
+        all_zeros = all(matrix_b[i][j] == 0 for j in range(unknows))
+        if all_zeros and matrix_b[i][-1] != 0:
+            print('Решений нет')
+            return None
+    
     line_list = []
     free_vars = []
     
     # Определяем свободные переменные
     if rang_matrix_b < unknows:
-        free_vars = unknows_list[rang_matrix_b:]
+        free_vars = unknows_list[rang_matrix_b:unknows]
     
     # Формируем уравнения для базисных переменных
-    for i in range(rang_matrix_b):
+    for i in range(min(rang_matrix_b, unknows)):
         equation = f'X{unknows_list[i]} = '
         terms = []
         
@@ -173,16 +127,16 @@ def slau(unknows, lines):
         
         # Коэффициенты при свободных переменных
         for j in range(rang_matrix_b, unknows):
-            if matrix_b[i][j] != 0:
+            if j < len(matrix_b[i]) - 1 and matrix_b[i][j] != 0:
                 coeff = -matrix_b[i][j]
                 if coeff > 0:
                     terms.append(f'+ {coeff}×X{unknows_list[j]}')
                 else:
                     terms.append(f'- {-coeff}×X{unknows_list[j]}')
         
-        # Коэффициенты при других базисных переменных (для диагонального вида)
-        for j in range(i + 1, rang_matrix_b):
-            if matrix_b[i][j] != 0:
+        # Коэффициенты при других базисных переменных
+        for j in range(i + 1, min(rang_matrix_b, unknows)):
+            if j < len(matrix_b[i]) - 1 and matrix_b[i][j] != 0:
                 coeff = -matrix_b[i][j]
                 if coeff > 0:
                     terms.append(f'+ {coeff}×X{unknows_list[j]}')
@@ -200,14 +154,9 @@ def slau(unknows, lines):
         line_list.append(f'X{var} - свободная переменная')
     
     # Выводим результаты
+    print("\nРешение системы:")
     for line in line_list:
         print(line)
 
-
-# printer(revert_matr(3))
-# rang(4)
-slau(3, 3)
-
-def fundamental_matrix():
-    ...
-
+if __name__ == "__main__":
+    slau(unknows=4, lines=3)

@@ -208,3 +208,4 @@ if __name__ == "__main__":
     # printer(simplified_matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mode=-1))
     # slau(unknows=4, lines=3)
     # fund_matrix(unknows=4, lines=3)
+    ...

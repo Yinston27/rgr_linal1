@@ -94,21 +94,12 @@ def slau(unknows, lines):
     unknows_list = [f'{i+1}' for i in range(unknows)]
     
     result = simplified_matrix(matrix_b, mode=unknows_list)
-    
     # Проверяем наличие решений
     if result[3]:  # Если установлен флаг отсутствия решений
         print('Решений нет')
         return None
     
     matrix_b, unknows_list, rang_matrix_b = result[:3]
-    
-    # Дополнительная проверка: если есть строка 0 0 ... 0 | b, где b ≠ 0
-    for i in range(len(matrix_b)):
-        all_zeros = all(matrix_b[i][j] == 0 for j in range(unknows))
-        if all_zeros and matrix_b[i][-1] != 0:
-            print('Решений нет')
-            return None
-    
     line_list = []
     free_vars = []
     
@@ -158,5 +149,62 @@ def slau(unknows, lines):
     for line in line_list:
         print(line)
 
+
+def fund_matrix(unknows=3, lines=3):
+    matric = [list(map(Fraction, input(f"Коэффициенты {i+1} уравнения через пробел: ").split(' '))) for i in range(lines)]
+    list_b = list(map(Fraction, input(f"Коэффициенты столбца B через пробел: ").split(' ')))
+    matrix_b = [matric[i] + [list_b[i]] for i in range(lines)]
+    unknows_list = [f'{i+1}' for i in range(unknows)]
+    res = simplified_matrix(matrix_b, mode=unknows_list)
+
+    if len(res) != 4:
+        print('Упсс(')
+        return res
+    
+    matrix, unknows_list, rang, nonconvergence = res
+
+    if len(unknows_list) == rang:
+        print('Система имеет только одно решение')
+        return res
+    
+    identity_matrix = [[int(i==j) for j in range(len(unknows_list)-rang)] for i in range(len(unknows_list)-rang)]
+    return_fund_matrix = [[] for i in range(len(unknows_list))]
+    # сортировка по количеству нулей в строках матрицы, не считая свободные члены - от свободных до "самых базисных":
+    matrix = sorted(matrix[::-1], key=lambda x: x[:-1].count(0), reverse=True) 
+    vectors_list = [[0 for i in range(len(unknows_list))] for j in range(len(identity_matrix))]
+    for iter_num_vector in range(len(vectors_list)):
+        iter_vector = vectors_list[iter_num_vector]
+        for number_line in range(len(unknows_list)-1, -1, -1):
+            if number_line >= rang:
+                iter_vector[number_line] = identity_matrix[iter_num_vector][number_line - rang]
+            else:
+                list_lin_komb = []
+                for j in range(number_line+1, len(unknows_list)):
+                    # print(number_line, str(iter_vector[j]), iter_vector)
+                    list_lin_komb.append(-matrix[number_line + 1 - rang][j] * Fraction(str(iter_vector[j])))
+
+                sum_list_lin_komb = 0
+                for l in range(len(list_lin_komb)):
+                    sum_list_lin_komb += list_lin_komb[l]
+                
+                iter_vector[number_line] = matrix[number_line + 1 - rang][-1] + sum_list_lin_komb
+        
+        unknows_list_for_sort = unknows_list[:]
+        # сортировка
+        for i in range(len(iter_vector)-1):
+            for j in range(i, len(iter_vector)-1):
+                if int(unknows_list_for_sort[j]) > int(unknows_list_for_sort[j+1]):
+                    unknows_list_for_sort[j], unknows_list_for_sort[j+1] = unknows_list_for_sort[j+1], unknows_list_for_sort[j]
+                    iter_vector[j], iter_vector[j+1] = iter_vector[j+1], iter_vector[j]
+        # создание 
+        for i in range(len(return_fund_matrix)):
+            return_fund_matrix[i].append(iter_vector[i])
+    # вывод
+    for line in return_fund_matrix:
+        print(*line)
+
+
 if __name__ == "__main__":
-    slau(unknows=4, lines=3)
+    # printer(simplified_matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]], mode=-1))
+    # slau(unknows=4, lines=3)
+    # fund_matrix(unknows=4, lines=3)
